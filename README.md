@@ -1,4 +1,4 @@
-Cobergence Rate
+Convergence Rate
 
 	GREEN  : Good convergence
 	Yellow : it takes time for convergence
