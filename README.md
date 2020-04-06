@@ -1,12 +1,11 @@
-GREEN  : Good convergence
+Cobergence Rate
 
-Yellow : it takes time for convergence
+	GREEN  : Good convergence
+	Yellow : it takes time for convergence
+	ORANGE : Bad convergence
+	RED    : Program BUG
+	TBT    : To be tested
 
-ORANGE : Bad convergence
-
-RED    : Program BUG
-
-TBT    : To be tested
 
 Architecture of repositories
 
