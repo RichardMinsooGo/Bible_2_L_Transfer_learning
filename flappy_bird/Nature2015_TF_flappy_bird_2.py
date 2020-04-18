@@ -11,11 +11,11 @@ import time
 
 # Hyper Parameters:
 FRAME_PER_ACTION = 1
-game_name = 'bird_dqn_TF_2'   # the name of the game being played for log files
-OBSERVE = 100.                # timesteps to observe before training
-EXPLORE = 200000.             # frames over which to anneal epsilon
-FINAL_EPSILON = 0             # 0.001 # final value of epsilon
-INITIAL_EPSILON = 0           # 0.01 # starting value of epsilon
+game_name = 'bird_TF_2015_2'   # the name of the game being played for log files
+OBSERVE = 100.                  # timesteps to observe before training
+EXPLORE = 200000.               # frames over which to anneal epsilon
+FINAL_EPSILON = 0.001           # final value of epsilon
+INITIAL_EPSILON = 0.1           # starting value of epsilon
 
 UPDATE_TIME = 100
 
@@ -43,23 +43,23 @@ class DQNAgent:
         self.size_replay_memory = 50000    # number of previous transitions to remember
         
         # init Q Network
-        self.stateInput, self.Q_value, self.W_conv1,    \
-        self.b_conv1, self.W_conv2, self.b_conv2,       \
-        self.W_conv3, self.b_conv3, self.W_fc1,         \
-        self.b_fc1, self.W_fc2, self.b_fc2              = self.build_model()
+        self.stateInput, self.output, self.W_conv1, \
+        self.b_conv1, self.W_conv2, self.b_conv2,   \
+        self.W_conv3, self.b_conv3, self.W_fc1,     \
+        self.b_fc1, self.W_fc2, self.b_fc2           = self.build_model()
 
         # init Target Q Network
-        self.stateInputT, self.Q_valueT, self.W_conv1T, \
-        self.b_conv1T, self.W_conv2T, self.b_conv2T,    \
-        self.W_conv3T, self.b_conv3T, self.W_fc1T,      \
-        self.b_fc1T, self.W_fc2T, self.b_fc2T           = self.build_model()
+        self.stateInput_tgt, self.output_tgt, self.W_conv1_tgt, \
+        self.b_conv1_tgt, self.W_conv2_tgt, self.b_conv2_tgt,   \
+        self.W_conv3_tgt, self.b_conv3_tgt, self.W_fc1_tgt,     \
+        self.b_fc1_tgt, self.W_fc2_tgt, self.b_fc2_tgt          = self.build_model()
 
         # Copy Weights from Q to Target Q
-        self.copy_weights_q_to_target_q = [self.W_conv1T.assign(self.W_conv1), self.b_conv1T.assign(self.b_conv1), \
-                                           self.W_conv2T.assign(self.W_conv2), self.b_conv2T.assign(self.b_conv2), \
-                                           self.W_conv3T.assign(self.W_conv3), self.b_conv3T.assign(self.b_conv3), \
-                                           self.W_fc1T.assign(self.W_fc1), self.b_fc1T.assign(self.b_fc1),         \
-                                           self.W_fc2T.assign(self.W_fc2), self.b_fc2T.assign(self.b_fc2)]
+        self.copy_weights_q_to_target_q = [self.W_conv1_tgt.assign(self.W_conv1), self.b_conv1_tgt.assign(self.b_conv1), \
+                                           self.W_conv2_tgt.assign(self.W_conv2), self.b_conv2_tgt.assign(self.b_conv2), \
+                                           self.W_conv3_tgt.assign(self.W_conv3), self.b_conv3_tgt.assign(self.b_conv3), \
+                                           self.W_fc1_tgt.assign(self.W_fc1), self.b_fc1_tgt.assign(self.b_fc1),         \
+                                           self.W_fc2_tgt.assign(self.W_fc2), self.b_fc2_tgt.assign(self.b_fc2)]
 
         self.createTrainingMethod()
 
@@ -123,7 +123,7 @@ class DQNAgent:
     def createTrainingMethod(self):
         self.action_target = tf.placeholder("float",[None,self.action_size])
         self.y_target = tf.placeholder("float", [None]) 
-        y_prediction = tf.reduce_sum(tf.multiply(self.Q_value, self.action_target), reduction_indices = 1)
+        y_prediction = tf.reduce_sum(tf.multiply(self.output, self.action_target), reduction_indices = 1)
         self.Loss = tf.reduce_mean(tf.square(self.y_target - y_prediction))
         self.train_step = tf.train.AdamOptimizer(1e-6).minimize(self.Loss)
 
@@ -137,7 +137,7 @@ class DQNAgent:
 
         # Step 2: calculate y 
         y_array = []
-        Q_array = self.Q_valueT.eval(feed_dict={self.stateInputT:next_states})
+        Q_array = self.output_tgt.eval(feed_dict={self.stateInput_tgt:next_states})
         for i in range(0,self.batch_size):
             done = minibatch[i][4]
             if done:
@@ -148,7 +148,7 @@ class DQNAgent:
         self.train_step.run(feed_dict={self.y_target : y_array, self.action_target : actions, self.stateInput : states})
 
     def get_action(self):
-        output = self.Q_value.eval(feed_dict= {self.stateInput:[self.stacked_state]})[0]
+        Q_value = self.output.eval(feed_dict= {self.stateInput:[self.stacked_state]})[0]
         action = np.zeros(self.action_size)
         action_index = 0
         if self.time_step % FRAME_PER_ACTION == 0:
@@ -156,7 +156,7 @@ class DQNAgent:
                 action_index = random.randrange(self.action_size)
                 action[action_index] = 1
             else:
-                action_index = np.argmax(output)
+                action_index = np.argmax(Q_value)
                 action[action_index] = 1
         else:
             action[0] = 1 # do nothing
@@ -173,6 +173,7 @@ def preprocess(state):
     ret, state = cv2.threshold(state,1,255,cv2.THRESH_BINARY)
     return np.reshape(state,(80,80,1))
 
+
 def main():
     # Step 1: init DQNAgent
     action_size = 2
@@ -188,7 +189,7 @@ def main():
         print("\n\n Successfully loaded:", checkpoint.model_checkpoint_path,"\n\n")
     else:
         print("\n\n Could not find old network weights \n\n")
-
+        
     # Step 2: init Flappy Bird Game
     game_state = game.GameState()
     # Step 3: play game
@@ -204,41 +205,47 @@ def main():
     # Step 3.2: run the game
     start_time = time.time()
     time_step = 0
-    # while (True):
+    episode = 0
     while time.time() - start_time < 5*60:
         time_step += 1
-        action = agent.get_action()
-        next_state, reward, done = game_state.frame_step(action)
-        next_state = preprocess(next_state)
-        
-        #stacked_next_state = np.append(next_state,agent.stacked_state[:,:,1:],axis = 2)
-        stacked_next_state = np.append(agent.stacked_state[:,:,1:],next_state,axis = 2)
-        agent.memory.append((agent.stacked_state, action, reward, stacked_next_state, done))
-        if len(agent.memory) > agent.size_replay_memory:
-            agent.memory.popleft()
-        if agent.time_step > OBSERVE:
-            # Train the network
-            agent.train_model()
+        episode_step = 0
+        done = False
+        while not done and episode_step < 1000:
+            episode_step += 1
+            action = agent.get_action()
+            next_state, reward, done = game_state.frame_step(action)
+            next_state = preprocess(next_state)
 
-        # update the old values
-        agent.stacked_state = stacked_next_state
-        agent.time_step += 1
-        
-        if agent.time_step % UPDATE_TIME == 0:
-            agent.Copy_Weights()
+            #stacked_next_state = np.append(next_state,agent.stacked_state[:,:,1:],axis = 2)
+            stacked_next_state = np.append(agent.stacked_state[:,:,1:],next_state,axis = 2)
+            agent.memory.append((agent.stacked_state, action, reward, stacked_next_state, done))
+            if len(agent.memory) > agent.size_replay_memory:
+                agent.memory.popleft()
+            if agent.time_step > OBSERVE:
+                # Train the network
+                agent.train_model()
 
-        # print info
-        progress = ""
-        if agent.time_step <= OBSERVE:
-            progress = "observe"
-        elif agent.time_step > OBSERVE and agent.time_step <= OBSERVE + EXPLORE:
-            progress = "explore"
-        else:
-            progress = "train"
+            # update the old values
+            agent.stacked_state = stacked_next_state
+            agent.time_step += 1
 
-        if time_step % 500 == 0:
-            print ("TIMESTEP", agent.time_step, "/ STATE", progress, \
-                   "/ EPSILON", agent.epsilon)
+            if agent.time_step % UPDATE_TIME == 0:
+                agent.Copy_Weights()
+
+            # print info
+            progress = ""
+            if agent.time_step <= OBSERVE:
+                progress = "observe"
+            elif agent.time_step > OBSERVE and agent.time_step <= OBSERVE + EXPLORE:
+                progress = "explore"
+            else:
+                progress = "train"
+
+            if done or episode_step == 1000:
+                episode += 1
+                print ("Episode :", episode, "/ Episode step :", episode_step, "/ STATE", progress, \
+                       "/ EPSILON", agent.epsilon)
+                break
             
     # save network every 100000 iteration
     # if agent.time_step % 1000 == 0:

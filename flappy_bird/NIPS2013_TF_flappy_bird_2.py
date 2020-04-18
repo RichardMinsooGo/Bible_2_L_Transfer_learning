@@ -11,11 +11,11 @@ import time
 
 # Hyper Parameters:
 FRAME_PER_ACTION = 1
-game_name = 'bird_TF_2013'    # the name of the game being played for log files
-OBSERVE = 100.                # timesteps to observe before training
-EXPLORE = 150000.             # frames over which to anneal epsilon
-FINAL_EPSILON = 0.0           # final value of epsilon
-INITIAL_EPSILON = 0.9         # starting value of epsilon
+game_name = 'bird_TF_2013_2'    # the name of the game being played for log files
+OBSERVE = 100.                  # timesteps to observe before training
+EXPLORE = 150000.               # frames over which to anneal epsilon
+FINAL_EPSILON = 0.0             # final value of epsilon
+INITIAL_EPSILON = 0.01          # starting value of epsilon
 
 model_path = "save_model/" + game_name
 graph_path = "save_graph/" + game_name
@@ -145,6 +145,7 @@ def preprocess(state):
     ret, state = cv2.threshold(state,1,255,cv2.THRESH_BINARY)
     return np.reshape(state,(80,80,1))
 
+
 def main():
     # Step 1: init DQNAgent
     action_size = 2
@@ -160,11 +161,11 @@ def main():
         print("\n\n Successfully loaded:", checkpoint.model_checkpoint_path,"\n\n")
     else:
         print("\n\n Could not find old network weights \n\n")
-
-
+        
     # Step 2: init Flappy Bird Game
     game_state = game.GameState()
     # Step 3: play game
+    
     # Step 3.1: obtain init state
     action = np.array([1,0])  # do nothing
     state, reward, done = game_state.frame_step(action)
@@ -177,38 +178,46 @@ def main():
     # Step 3.2: run the game
     start_time = time.time()
     time_step = 0
-    # while (True):
+    episode = 0
     while time.time() - start_time < 5*60:
         time_step += 1
-        action = agent.get_action()
-        next_state, reward, done = game_state.frame_step(action)
-        next_state = preprocess(next_state)
-        
-        #stacked_next_state = np.append(next_state,agent.stacked_state[:,:,1:],axis = 2)
-        stacked_next_state = np.append(agent.stacked_state[:,:,1:],next_state,axis = 2)
-        agent.memory.append((agent.stacked_state, action, reward, stacked_next_state, done))
-        if len(agent.memory) > agent.size_replay_memory:
-            agent.memory.popleft()
-        if agent.time_step > OBSERVE:
-            # Train the network
-            agent.train_model()
+        episode_step = 0
+        done = False
+        while not done and episode_step < 1000:
+            episode_step += 1
+            action = agent.get_action()
+            next_state, reward, done = game_state.frame_step(action)
+            next_state = preprocess(next_state)
 
-        # update the old values
-        agent.stacked_state = stacked_next_state
-        agent.time_step += 1
+            #stacked_next_state = np.append(next_state,agent.stacked_state[:,:,1:],axis = 2)
+            stacked_next_state = np.append(agent.stacked_state[:,:,1:],next_state,axis = 2)
+            
+            agent.memory.append((agent.stacked_state, action, reward, stacked_next_state, done))
+            if len(agent.memory) > agent.size_replay_memory:
+                agent.memory.popleft()
+                
+            if agent.time_step > OBSERVE:
+                # Train the network
+                agent.train_model()
 
-        # print info
-        progress = ""
-        if agent.time_step <= OBSERVE:
-            progress = "observe"
-        elif agent.time_step > OBSERVE and agent.time_step <= OBSERVE + EXPLORE:
-            progress = "explore"
-        else:
-            progress = "train"
+            # update the old values
+            agent.stacked_state = stacked_next_state
+            agent.time_step += 1
 
-        if time_step % 500 == 0:
-            print ("TIMESTEP", agent.time_step, "/ STATE", progress, \
-                   "/ EPSILON", agent.epsilon)
+            # print info
+            progress = ""
+            if agent.time_step <= OBSERVE:
+                progress = "observe"
+            elif agent.time_step > OBSERVE and agent.time_step <= OBSERVE + EXPLORE:
+                progress = "explore"
+            else:
+                progress = "train"
+
+            if done or episode_step == 1000:
+                episode += 1
+                print ("Episode :", episode, "/ Episode step :", episode_step, "/ STATE", progress, \
+                       "/ EPSILON", agent.epsilon)
+                break
             
     # save network every 100000 iteration
     # if agent.time_step % 1000 == 0:
