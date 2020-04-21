@@ -4,6 +4,8 @@ from __future__ import print_function
 import tensorflow as tf
 import cv2
 import os
+import os.path
+import pickle
 import sys
 sys.path.append("game/")
 import wrapped_flappy_bird as game
@@ -16,12 +18,13 @@ FRAME_PER_ACTION = 1
 game_name = 'bird_TF_2013_1'  # the name of the game being played for log files
 action_size = 2               # number of valid actions
 discount_factor = 0.99        # decay rate of past observations
-OBSERVE = 1000.               # timesteps to observe before training
+OBSERVE = 100.                # timesteps to observe before training
 EXPLORE = 2000000.            # frames over which to anneal epsilon
-FINAL_EPSILON = 0.0001        # final value of epsilon
-INITIAL_EPSILON = 0.0001      # starting value of epsilon
+epsilon_min = 0.00001         # final value of epsilon
+epsilon_max = 0.0001          # starting value of epsilon
+epsilon_decrement = 0.00001
 size_replay_memory = 50000    # number of previous transitions to remember
-batch_size = 32                    # size of minibatch
+batch_size = 32               # size of minibatch
 
 model_path = "save_model/" + game_name
 graph_path = "save_graph/" + game_name
@@ -119,12 +122,33 @@ def main():
     y_prediction = tf.reduce_sum(tf.multiply(output, a), reduction_indices=1)
     Loss = tf.reduce_mean(tf.square(y - y_prediction))
     train_step = tf.train.AdamOptimizer(1e-6).minimize(Loss)
+    
+    # store the previous observations in replay memory
+    # memory = deque()
+
+    # saving and loading networks
+    saver = tf.train.Saver()
+    sess.run(tf.initialize_all_variables())
+    
+    checkpoint = tf.train.get_checkpoint_state(model_path)
+    if checkpoint and checkpoint.model_checkpoint_path:
+        saver.restore(sess, checkpoint.model_checkpoint_path)
+        
+        if os.path.isfile(model_path + '/append_memory.pickle'):                        
+            with open(model_path + '/append_memory.pickle', 'rb') as f:
+                memory = pickle.load(f)
+
+            with open(model_path + '/epsilon_episode.pickle', 'rb') as ggg:
+                epsilon, episode = pickle.load(ggg)
+                epsilon = 0.001
+
+        print("\n\n Successfully loaded:", checkpoint.model_checkpoint_path,"\n\n")
+    else:
+        epsilon = epsilon_max
+        print("Could not find old network weights")
 
     # open up a game state to communicate with emulator
     game_state = game.GameState()
-
-    # store the previous observations in replay memory
-    memory = deque()
 
     # get the first state by doing nothing and preprocess the image to 80x80x4
     do_nothing = np.zeros(action_size)
@@ -134,27 +158,25 @@ def main():
     ret, state = cv2.threshold(state,1,255,cv2.THRESH_BINARY)
     stacked_state = np.stack((state, state, state, state), axis=2)
 
-    # saving and loading networks
-    saver = tf.train.Saver()
-    sess.run(tf.initialize_all_variables())
-    
-    checkpoint = tf.train.get_checkpoint_state(model_path)
-    if checkpoint and checkpoint.model_checkpoint_path:
-        saver.restore(sess, checkpoint.model_checkpoint_path)
-        print("\n\n Successfully loaded:", checkpoint.model_checkpoint_path,"\n\n")
-    else:
-        print("Could not find old network weights")
-
     # start training
-    epsilon = INITIAL_EPSILON
+    
     time_step = 0
-    start_time = time.time()
     episode = 0
-    while time.time() - start_time < 5*60:
+    progress = ""
+    start_time = time.time()
+    
+    while time.time() - start_time < 5*60:        
+        if len(memory) < size_replay_memory:
+            progress = "Exploration"            
+        else:
+            progress = "Training"
+                
         episode_step = 0
         done = False
         while not done and episode_step < 1000:
             episode_step += 1
+            time_step += 1
+
             # choose an action epsilon greedily
             Qvalue = output.eval(feed_dict={s : [stacked_state]})[0]
             action = np.zeros([action_size])
@@ -170,72 +192,45 @@ def main():
             else:
                 action[0] = 1 # do nothing
 
-            # scale down epsilon
-            if epsilon > FINAL_EPSILON and t > OBSERVE:
-                epsilon -= (INITIAL_EPSILON - FINAL_EPSILON) / EXPLORE
-
             # run the selected action and observe next state and reward
-            next_state_colored, reward, done = game_state.frame_step(action)
-            next_state = cv2.cvtColor(cv2.resize(next_state_colored, (80, 80)), cv2.COLOR_BGR2GRAY)
+            next_state, reward, done = game_state.frame_step(action)
+            next_state = cv2.cvtColor(cv2.resize(next_state, (80, 80)), cv2.COLOR_BGR2GRAY)
             ret, next_state = cv2.threshold(next_state, 1, 255, cv2.THRESH_BINARY)
             next_state = np.reshape(next_state, (80, 80, 1))
-            #stacked_nextstate = np.append(next_state, stacked_state[:,:,1:], axis = 2)
-            stacked_nextstate = np.append(next_state, stacked_state[:, :, :3], axis=2)
+            #stacked_next_state = np.append(next_state, stacked_state[:,:,1:], axis = 2)
+            stacked_next_state = np.append(next_state, stacked_state[:, :, :3], axis=2)
 
             # store the transition in memory
-            memory.append((stacked_state, action, reward, stacked_nextstate, done))
+            memory.append((stacked_state, action, reward, stacked_next_state, done))
             if len(memory) > size_replay_memory:
                 memory.popleft()
 
             # only train if done observing
-            if time_step > OBSERVE:
+            if progress == "Training":
                 train_model(s, a, y, memory, output, train_step)
-                """
-                # sample a minibatch to train on
-                minibatch = random.sample(memory, batch_size)
+                
+                # scale down epsilon
+                if epsilon > epsilon_min:
+                    epsilon -= epsilon_decrement
 
-                # get the batch variables
-                states      = [batch[0] for batch in minibatch]
-                actions     = [batch[1] for batch in minibatch]
-                rewards     = [batch[2] for batch in minibatch]
-                next_states = [batch[3] for batch in minibatch]
-
-                y_batch = []
-                output_j1_batch = output.eval(feed_dict = {s : next_states})
-                for i in range(0, len(minibatch)):
-                    done = minibatch[i][4]
-                    # if done, only equals reward
-                    if done:
-                        y_batch.append(rewards[i])
-                    else:
-                        y_batch.append(rewards[i] + discount_factor * np.max(output_j1_batch[i]))
-
-                # perform gradient step
-                train_step.run(feed_dict = {y : y_batch, a : actions, s : states})
-            """
             # update the old values
-            stacked_state = stacked_nextstate
-            time_step += 1
+            stacked_state = stacked_next_state
             
-            # print info
-            progress = ""
-            if time_step <= OBSERVE:
-                progress = "observe"
-            elif time_step > OBSERVE and time_step <= OBSERVE + EXPLORE:
-                progress = "explore"
-            else:
-                progress = "train"
-
             if done or episode_step == 1000:
                 episode += 1
-                print("Episode :",episode,"/ Episode Step :", episode_step, "/ Progress", progress, \
-                    "/ EPSILON", epsilon)
+                print("Episode :{:>5}".format(episode), "/ Episode step :{:>4}".format(episode_step), "/ Progress :", progress, \
+                      "/ Epsilon :{:>2.6f}".format(epsilon), "/ Memory size :{:>5}".format(len(memory)))
                 break
             
-    print("\n\n Now we save model \n\n")
-    saver.save(sess, model_path + "/bird-dqn", global_step = time_step + 2920000)
-    # saver.save(sess, 'saved_networks/' + GAME + '-dqn', global_step = t)
+    saver.save(sess, model_path + "/model.ckpt")
+    with open(model_path + '/append_memory.pickle', 'wb') as f:
+        pickle.dump(memory, f)
         
+    save_object = (epsilon, episode) 
+    with open(model_path + '/epsilon_episode.pickle', 'wb') as ggg:
+        pickle.dump(save_object, ggg)
+    print("\n\n Now we save model \n\n")
+    sys.exit()
 
 if __name__ == "__main__":
     main()

@@ -4,6 +4,8 @@ import random
 from collections import deque
 import cv2
 import os
+import os.path
+import pickle
 import sys
 sys.path.append("game/")
 import wrapped_flappy_bird as game
@@ -12,10 +14,11 @@ import time
 # Hyper Parameters:
 FRAME_PER_ACTION = 1
 game_name = 'bird_TF_2013_2'    # the name of the game being played for log files
-OBSERVE = 100.                  # timesteps to observe before training
+OBSERVE = 100.                  # timesteps to observe before Training
 EXPLORE = 150000.               # frames over which to anneal epsilon
-FINAL_EPSILON = 0.0             # final value of epsilon
-INITIAL_EPSILON = 0.01          # starting value of epsilon
+epsilon_min = 0.00001           # final value of epsilon
+epsilon_max = 0.01              # starting value of epsilon
+epsilon_decrement = 0.00001
 
 model_path = "save_model/" + game_name
 graph_path = "save_graph/" + game_name
@@ -33,7 +36,7 @@ class DQNAgent:
         self.memory = deque()
         # init some parameters
         self.time_step = 0
-        self.epsilon = INITIAL_EPSILON
+        self.epsilon = epsilon_max
         self.action_size = action_size
         # init Q network
         self.build_model()
@@ -76,11 +79,10 @@ class DQNAgent:
         b_fc2 = self.bias_variable([self.action_size])
 
         # input layer
-
-        self.stateInput = tf.placeholder("float",[None,80,80,4])
+        self.x_image = tf.placeholder("float",[None,80,80,4])
 
         # hidden layers
-        h_conv1 = tf.nn.relu(self.conv2d(self.stateInput,W_conv1,4) + b_conv1)
+        h_conv1 = tf.nn.relu(self.conv2d(self.x_image,W_conv1,4) + b_conv1)
         h_pool1 = self.max_pool_2x2(h_conv1)
 
         h_conv2 = tf.nn.relu(self.conv2d(h_pool1,W_conv2,2) + b_conv2)
@@ -109,7 +111,7 @@ class DQNAgent:
 
         # Step 2: calculate y 
         y_array = []
-        Q_array = self.output.eval(feed_dict={self.stateInput:next_states})
+        Q_array = self.output.eval(feed_dict={self.x_image:next_states})
         for i in range(0,self.batch_size):
             done = minibatch[i][4]
             if done:
@@ -117,10 +119,10 @@ class DQNAgent:
             else:
                 y_array.append(rewards[i] + self.discount_factor * np.max(Q_array[i]))
 
-        self.train_step.run(feed_dict={self.y_target : y_array, self.action_target : actions, self.stateInput : states})
+        self.train_step.run(feed_dict={self.y_target : y_array, self.action_target : actions, self.x_image : states})
 
     def get_action(self):
-        Q_value = self.output.eval(feed_dict= {self.stateInput:[self.stacked_state]})[0]
+        Q_value = self.output.eval(feed_dict= {self.x_image:[self.stacked_state]})[0]
         action = np.zeros(self.action_size)
         action_index = 0
         if self.time_step % FRAME_PER_ACTION == 0:
@@ -132,11 +134,7 @@ class DQNAgent:
                 action[action_index] = 1
         else:
             action[0] = 1 # do nothing
-
-        # change episilon
-        if self.epsilon > FINAL_EPSILON and self.time_step > OBSERVE:
-            self.epsilon -= (INITIAL_EPSILON - FINAL_EPSILON)/EXPLORE
-
+            
         return action
 
 # preprocess raw image to 80*80 gray image
@@ -144,7 +142,6 @@ def preprocess(state):
     state = cv2.cvtColor(cv2.resize(state, (80, 80)), cv2.COLOR_BGR2GRAY)
     ret, state = cv2.threshold(state,1,255,cv2.THRESH_BINARY)
     return np.reshape(state,(80,80,1))
-
 
 def main():
     # Step 1: init DQNAgent
@@ -158,6 +155,15 @@ def main():
     checkpoint = tf.train.get_checkpoint_state(model_path)        
     if checkpoint and checkpoint.model_checkpoint_path:
         agent.saver.restore(agent.session, checkpoint.model_checkpoint_path)
+        
+        if os.path.isfile(model_path + '/append_memory.pickle'):                        
+            with open(model_path + '/append_memory.pickle', 'rb') as f:
+                agent.memory = pickle.load(f)
+
+            with open(model_path + '/epsilon_episode.pickle', 'rb') as ggg:
+                agent.epsilon, episode = pickle.load(ggg)
+                # agent.epsilon = 0.05
+
         print("\n\n Successfully loaded:", checkpoint.model_checkpoint_path,"\n\n")
     else:
         print("\n\n Could not find old network weights \n\n")
@@ -168,61 +174,70 @@ def main():
     
     # Step 3.1: obtain init state
     action = np.array([1,0])  # do nothing
-    state, reward, done = game_state.frame_step(action)
-    
+    state, reward, done = game_state.frame_step(action)    
     state = cv2.cvtColor(cv2.resize(state, (80, 80)), cv2.COLOR_BGR2GRAY)
     ret, state = cv2.threshold(state,1,255,cv2.THRESH_BINARY)
     # agent.setInitState(state)
     agent.stacked_state = np.stack((state, state, state, state), axis = 2)
 
     # Step 3.2: run the game
+    progress = ""
     start_time = time.time()
-    time_step = 0
     episode = 0
+    
     while time.time() - start_time < 5*60:
-        time_step += 1
+        if len(agent.memory) < agent.size_replay_memory:
+            progress = "Exploration"            
+        else:
+            progress = "Training"
+                
         episode_step = 0
         done = False
         while not done and episode_step < 1000:
             episode_step += 1
+            agent.time_step += 1
+                        
             action = agent.get_action()
+            
             next_state, reward, done = game_state.frame_step(action)
+            
             next_state = preprocess(next_state)
-
             #stacked_next_state = np.append(next_state,agent.stacked_state[:,:,1:],axis = 2)
             stacked_next_state = np.append(agent.stacked_state[:,:,1:],next_state,axis = 2)
             
             agent.memory.append((agent.stacked_state, action, reward, stacked_next_state, done))
+            
             if len(agent.memory) > agent.size_replay_memory:
                 agent.memory.popleft()
                 
-            if agent.time_step > OBSERVE:
-                # Train the network
+            # only train if done observing
+            if progress == "Training":
+                # train the network
                 agent.train_model()
+                
+                # scale down epsilon
+                if agent.epsilon > epsilon_min:
+                    agent.epsilon -= epsilon_decrement
 
             # update the old values
             agent.stacked_state = stacked_next_state
-            agent.time_step += 1
-
-            # print info
-            progress = ""
-            if agent.time_step <= OBSERVE:
-                progress = "observe"
-            elif agent.time_step > OBSERVE and agent.time_step <= OBSERVE + EXPLORE:
-                progress = "explore"
-            else:
-                progress = "train"
-
+            
             if done or episode_step == 1000:
                 episode += 1
-                print ("Episode :", episode, "/ Episode step :", episode_step, "/ STATE", progress, \
-                       "/ EPSILON", agent.epsilon)
-                break
-            
-    # save network every 100000 iteration
-    # if agent.time_step % 1000 == 0:
+                print ("Episode :", episode, "/ Episode step :", episode_step, "/ Progress :", progress, \
+                       "/ Epsilon :", agent.epsilon, "Memory size :", len(agent.memory))
+                break            
+    
+    agent.saver.save(agent.session, model_path + "/model.ckpt")
+    
+    with open(model_path + '/append_memory.pickle', 'wb') as f:
+        pickle.dump(agent.memory, f)
+        
+    save_object = (agent.epsilon, episode) 
+    with open(model_path + '/epsilon_episode.pickle', 'wb') as ggg:
+        pickle.dump(save_object, ggg)
     print("\n\n Now we save model \n\n")
-    agent.saver.save(agent.session, model_path + "/bird-dqn", global_step = agent.time_step)
-
+    sys.exit()
+        
 if __name__ == '__main__':
     main()
