@@ -1,102 +1,21 @@
-Convergence Rate
-
-	GREEN  : Good convergence
-	Yellow : it takes time for convergence
-	ORANGE : Bad convergence
-	RED    : Program BUG
-	TBT    : To be tested
+https://github.com/RichardMinsooGo
+: This repository will not be updated due to the Github structure.
+Those files were on migration for the below new repositories.
+Please visit below repositories.
 
 
-Architecture of repositories
+https://github.com/RichardMinsooGo-ML
+: This is new repository for Machine Learning.
 
-Machine_Learning_Session_1_Basics
 
-	01_Introduction
-	02_TensorFlow_Way
-	03_Linear_Regression
-	04_Support_Vector_Machines
-	05_Nearest_Neighbor_Methods
-	06_Neural_Networks
-	07_BackPropagation
+https://github.com/RichardMinsooGo-RL-Gym
+: This is new repository for Reinforcement Learning based on Open-AI gym.
 
-Machine_Learning_Session_2_MNIST_CNN
 
-	01_MNIST_Basics
-	02_MNIST_Tensorboard_Save_Restore
-	03_MNIST_Basics_Keras
-	04_MNIST_CNN
-	05_MNIST_CNN_Tensorboard_Save_Restore
-	06_MNIST_CNN_Keras
-	07_Cifar10_100_CNN
+https://github.com/RichardMinsooGo-RL-Single-agent  
+: This is new repository for Reinforcement Learning for Single Agent.
 
-Machine_Learning_Session_3_NLP_AE_GAN_RNN
 
-	01_Natural_Language_Processing
-	02_Auto_Encoder
-	03_Generative_Adversarial_Network
-	03_Generative_Adversarial_Network_Keras
-	04_Recurrent_Neural_Networks
+https://github.com/RichardMinsooGo-RL-Multi-agent
+: This new repository is for Reinforcement Learning for Multi Agents.
 
-Machine_Learning_Session_4_Alexnet_VGG_Resnet_Inception
-
-	01_MNIST_VGG_RESNET_Inception
-	01_MNIST_VGG_RESNET_Inception_Keras
-	02_MNIST_Cifar10_100_Ensemble_from_Keras_Data
-	03_Cifar10_100_Alexnet
-	03_Cifar10_100_Alexnet_Keras
-	04_Cifar10_100_VGG
-	04_Cifar10_100_VGG_Keras
-	05_Cifar10_100_Resnet
-	05_Cifar10_100_Resnet_Keras
-	06_Cifar10_100_Inception
-	06_Cifar10_100_Inception_Keras
-
-Reinforcement_Learning_Session_1_Basics
-
-	01_policy_iteration
-	02_value_iteration
-	03_monte_carlo
-	04_sarsa
-	05_q_table
-
-Reinforcement_Learning_Session_2_DQN
-
-	01_q_net_0_layer
-	01_q_net_0_layer_Keras
-	02_deep_sarsa
-	02_deep_sarsa_Keras
-	03_NIPS_2013_dqn
-	03_NIPS_2013_dqn_Keras
-	04_Nature_2015_dqn
-	04_Nature_2015_dqn_Keras
-	05_double_dqn
-	05_double_dqn_Keras
-	06_dueling_dqn
-	06_dueling_dqn_Keras
-	07_dqn_dropout_no_dropout
-	08_dqn_3_layer_model
-	09_dqn_15_layer_model
-	10_memory_management
-	11_Prioritized_Replay
-
-Reinforcement_Learning_Session_3_A3C
-
-	01_policy_gradient
-	01_policy_gradient_Keras
-	02_A2C
-	02_A2C_Keras
-	03_Deep_Deterministic_Policy_Gradient_DDPG
-	03_Deep_Deterministic_Policy_Gradient_DDPG_Keras
-	04_A3C
-	04_A3C_Keras
-	05_Proximal_Policy_Optimization
-	05_Proximal_Policy_Optimization_Keras
-
-Reinforcement_Learning_Session_4_Experiments
-
-	2D_car
-	bipedal_walker
-	breakout
-	Games__TF
-	lunar_lander
-	robot_arm
