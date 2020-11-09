@@ -1,7 +1,7 @@
 https://github.com/RichardMinsooGo
-: This repository will not be updated due to the Github structure.
-Those files were on migration for the below new repositories.
-Please visit below repositories.
+: This repository will used as a TF2.0 Expert Session.
+해당 repository는 TensorFlow 2.0 전문가 과정을 위해서 업데이트 예정입니다.
+Google Colab 에서 대부분 작동하게 만들 예정이나, Colab 의 물리적인 제약으로 인하여 stand-alone mode에서도 작동하도록 만들 예정입니다.
 
 
 https://github.com/RichardMinsooGo-ML
