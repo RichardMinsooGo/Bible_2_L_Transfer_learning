@@ -6,7 +6,8 @@ https://github.com/RichardMinsooGo
  TF2.0 dlsk Keras 자체에서 제공하는 많은 네트워크들의 Input size가 224입니다. 
  MNIST는 너무 쉬운 예제이고, Cifar100 정도는 되어야 network의 성능이 어느정도인지 알수 있습니다. 
  Cifar10은 Cifar100를 가기위한 중간 단계정도로 보면 됩니다. 
- 다른 repository를 보시면 cifar100도 올릴예정입니다. 2020년 11월 15 까지는 Cifar10, Cifar100 업로드 예정입니다.
+ 다른 repository를 보시면 cifar100도 올릴예정입니다. 2020년 11월 15 까지는 Cifar10은 폴더 가 없습니다. Github 에서 제공하는 폴더당 파일 개수는 1000개 입니다. 그런데 Cifar 10은 class당 이미지가 5000 입니다.
+이 저장소에 있는 python 파일을 실행시켜서 생성시키세요.
 
  아래의 Github 저장소는 TF1.0과 Keras로 알고리즘 용으로 만들어진 code들입니다. 
  대부분 TF2.0으로 재구성 예정입니다. 
