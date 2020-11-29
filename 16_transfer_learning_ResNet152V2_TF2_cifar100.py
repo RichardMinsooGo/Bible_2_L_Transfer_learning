@@ -1,3 +1,4 @@
+
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -44,7 +45,7 @@ model.summary()
 cifar100 = tf.keras.datasets.cifar100
 
 # load dataset
-(X_test, Y_train) , (X_test, Y_test) = cifar100.load_data()
+(X_train, Y_train) , (X_test, Y_test) = cifar100.load_data()
 
 import numpy as np
 import cv2
@@ -68,10 +69,10 @@ def getBatch(batch_size, train_or_val='train'):
     x_batch = []
     y_batch = []
     if train_or_val == 'train':
-        idx = np.random.randint(0, len(X_test), (batch_size))
+        idx = np.random.randint(0, len(X_train), (batch_size))
 
         for i in idx:
-            img = cv2.resize(X_test[i], (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_CUBIC)
+            img = cv2.resize(X_train[i], (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_CUBIC)
             x_batch.append(img)
             y_batch.append(Y_train[i])
     elif train_or_val == 'val':
@@ -88,12 +89,13 @@ def getBatch(batch_size, train_or_val='train'):
     y_batch = np.array(y_batch)
     return x_batch, y_batch
 
-EPOCHS = 1000
+EPOCHS = 10
 BATCH_SIZE = 250
 VAL_SIZE = 500
 # BATCH_SIZE = 50
 # VAL_SIZE = 50
 STEPS = 50
+
 
 for e in range(EPOCHS):
     train_loss = 0
@@ -114,8 +116,23 @@ for e in range(EPOCHS):
 model.save_weights('./cifar100_ResNet152V2.h5', overwrite=True)
 
 # Sample outputs from validation set
-LABELS_LIST = "airplane automobile bird cat deer dog frog horse ship truck".split(" ")
-
+LABELS_LIST = [
+    'apple', 'aquarium_fish', 'baby', 'bear', 'beaver', 'bed', 'bee', 'beetle', 
+    'bicycle', 'bottle', 'bowl', 'boy', 'bridge', 'bus', 'butterfly', 'camel', 
+    'can', 'castle', 'caterpillar', 'cattle', 'chair', 'chimpanzee', 'clock', 
+    'cloud', 'cockroach', 'couch', 'crab', 'crocodile', 'cup', 'dinosaur', 
+    'dolphin', 'elephant', 'flatfish', 'forest', 'fox', 'girl', 'hamster', 
+    'house', 'kangaroo', 'keyboard', 'lamp', 'lawn_mower', 'leopard', 'lion',
+    'lizard', 'lobster', 'man', 'maple_tree', 'motorcycle', 'mountain', 'mouse',
+    'mushroom', 'oak_tree', 'orange', 'orchid', 'otter', 'palm_tree', 'pear',
+    'pickup_truck', 'pine_tree', 'plain', 'plate', 'poppy', 'porcupine',
+    'possum', 'rabbit', 'raccoon', 'ray', 'road', 'rocket', 'rose',
+    'sea', 'seal', 'shark', 'shrew', 'skunk', 'skyscraper', 'snail', 'snake',
+    'spider', 'squirrel', 'streetcar', 'sunflower', 'sweet_pepper', 'table',
+    'tank', 'telephone', 'television', 'tiger', 'tractor', 'train', 'trout',
+    'tulip', 'turtle', 'wardrobe', 'whale', 'willow_tree', 'wolf', 'woman',
+    'worm'
+]
 import matplotlib.pyplot as plt
 
 x_v, y_v = getBatch(10, "val")
@@ -126,3 +143,5 @@ for i in range(10):
     plt.show()
     print("pred: " + LABELS_LIST[np.argmax(model.predict(x_v[i:i+1]))])
     print("acct: " + LABELS_LIST[np.argmax(y_v[i])])
+
+
