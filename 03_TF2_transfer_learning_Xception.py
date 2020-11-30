@@ -1,9 +1,6 @@
-
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-# !pip install -U tf-hub-nightly
-# import tensorflow_hub as hub
 import tensorflow as tf
 
 from tensorflow.keras import layers
@@ -61,6 +58,8 @@ Y_test = tf.keras.utils.to_categorical(Y_test, NUM_CLASSES)
 
 model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["categorical_accuracy"])
 
+# model.load_weights('./cifar10_Xception.h5')
+
 # returns batch_size random samples from either training set or validation set
 # resizes each image to (224, 244, 3), the native input size for VGG19
 def getBatch(batch_size, train_or_val='train'):
@@ -88,10 +87,10 @@ def getBatch(batch_size, train_or_val='train'):
     return x_batch, y_batch
 
 EPOCHS = 10
-# BATCH_SIZE = 250
-# VAL_SIZE = 500
-BATCH_SIZE = 50
-VAL_SIZE = 50
+BATCH_SIZE = 250
+VAL_SIZE = 500
+# BATCH_SIZE = 50
+# VAL_SIZE = 50
 STEPS = 50
 
 for e in range(EPOCHS):
@@ -104,11 +103,13 @@ for e in range(EPOCHS):
         train_loss += out[0]
         train_acc += out[1]
 
-    print(f"Epoch: {e}\nTraining Loss = {train_loss / STEPS}\tTraining Acc = {train_acc / STEPS}")
+    print(f"Epoch: {e+1}\nTraining Loss = {train_loss / STEPS}\tTraining Acc = {train_acc / STEPS}")
 
     x_v, y_v = getBatch(VAL_SIZE, "val")
     eval = model.evaluate(x_v, y_v)
     print(f"Validation loss: {eval[0]}\tValidation Acc: {eval[1]}\n")
+    
+model.save_weights('./cifar10_Xception.h5', overwrite=True)
 
 # Sample outputs from validation set
 LABELS_LIST = "airplane automobile bird cat deer dog frog horse ship truck".split(" ")

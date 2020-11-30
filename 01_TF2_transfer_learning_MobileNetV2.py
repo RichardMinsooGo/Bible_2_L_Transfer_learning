@@ -57,9 +57,10 @@ Y_test = tf.keras.utils.to_categorical(Y_test, NUM_CLASSES)
 
 model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["categorical_accuracy"])
 
+# model.load_weights('./cifar10_MobileNetV2.h5')
+
 # returns batch_size random samples from either training set or validation set
 # resizes each image to (224, 244, 3), the native input size for VGG19
-# resizes each image to (160, 160, 3), the native input size for MobileNetV2
 def getBatch(batch_size, train_or_val='train'):
     x_batch = []
     y_batch = []
@@ -84,11 +85,11 @@ def getBatch(batch_size, train_or_val='train'):
     y_batch = np.array(y_batch)
     return x_batch, y_batch
 
-EPOCHS = 5
-# BATCH_SIZE = 250
-# VAL_SIZE = 500
-BATCH_SIZE = 50
-VAL_SIZE = 50
+EPOCHS = 10
+BATCH_SIZE = 250
+VAL_SIZE = 500
+# BATCH_SIZE = 50
+# VAL_SIZE = 50
 STEPS = 50
 
 for e in range(EPOCHS):
@@ -106,6 +107,8 @@ for e in range(EPOCHS):
     x_v, y_v = getBatch(VAL_SIZE, "val")
     eval = model.evaluate(x_v, y_v)
     print(f"Validation loss: {eval[0]}\tValidation Acc: {eval[1]}\n")
+    
+model.save_weights('./cifar10_MobileNetV2.h5', overwrite=True)
 
 # Sample outputs from validation set
 LABELS_LIST = "airplane automobile bird cat deer dog frog horse ship truck".split(" ")
@@ -120,3 +123,4 @@ for i in range(10):
     plt.show()
     print("pred: " + LABELS_LIST[np.argmax(model.predict(x_v[i:i+1]))])
     print("acct: " + LABELS_LIST[np.argmax(y_v[i])])
+

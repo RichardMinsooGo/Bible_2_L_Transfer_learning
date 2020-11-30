@@ -1,16 +1,14 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-# !pip install -U tf-hub-nightly
-# import tensorflow_hub as hub
 import tensorflow as tf
 
 from tensorflow.keras import layers, Input, Model
 
-# 사전 훈련된 모델 MobileNet V2에서 기본 모델을 생성합니다.
 IMG_SIZE = 224                      # VGG19
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 
+# 사전 훈련된 모델 ResNet152V2 에서 기본 모델을 생성합니다.
 base_model = tf.keras.applications.ResNet152V2(input_shape=IMG_SHAPE,
                                                include_top=False,
                                                weights='imagenet')
@@ -60,6 +58,8 @@ Y_test = tf.keras.utils.to_categorical(Y_test, NUM_CLASSES)
 
 model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["categorical_accuracy"])
 
+# model.load_weights('./cifar10_ResNet152V2.h5')
+
 # returns batch_size random samples from either training set or validation set
 # resizes each image to (224, 244, 3), the native input size for VGG19
 def getBatch(batch_size, train_or_val='train'):
@@ -87,10 +87,10 @@ def getBatch(batch_size, train_or_val='train'):
     return x_batch, y_batch
 
 EPOCHS = 10
-# BATCH_SIZE = 250
-# VAL_SIZE = 500
-BATCH_SIZE = 50
-VAL_SIZE = 50
+BATCH_SIZE = 250
+VAL_SIZE = 500
+# BATCH_SIZE = 50
+# VAL_SIZE = 50
 STEPS = 50
 
 for e in range(EPOCHS):
@@ -108,6 +108,8 @@ for e in range(EPOCHS):
     x_v, y_v = getBatch(VAL_SIZE, "val")
     eval = model.evaluate(x_v, y_v)
     print(f"Validation loss: {eval[0]}\tValidation Acc: {eval[1]}\n")
+    
+model.save_weights('./cifar10_ResNet152V2.h5', overwrite=True)
 
 # Sample outputs from validation set
 LABELS_LIST = "airplane automobile bird cat deer dog frog horse ship truck".split(" ")
@@ -122,3 +124,4 @@ for i in range(10):
     plt.show()
     print("pred: " + LABELS_LIST[np.argmax(model.predict(x_v[i:i+1]))])
     print("acct: " + LABELS_LIST[np.argmax(y_v[i])])
+

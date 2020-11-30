@@ -7,20 +7,20 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 
 from tensorflow.keras import layers, Input, Model
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.layers import Conv2D, Dense, MaxPooling2D, Dropout, Flatten,GlobalAveragePooling2D
+    
 
-# 사전 훈련된 모델 MobileNet V2에서 기본 모델을 생성합니다.
 IMG_SIZE = 224                      # VGG19
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 
+# 사전 훈련된 모델 ResNet152V2 에서 기본 모델을 생성합니다.
 base_model = tf.keras.applications.ResNet152V2(input_shape=IMG_SHAPE,
                                                include_top=False,
                                                weights='imagenet')
 
 base_model.summary()
 
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, Dense, MaxPooling2D, Dropout, Flatten,GlobalAveragePooling2D
-    
 # The last 15 layers fine tune
 for layer in base_model.layers[:-15]:
     layer.trainable = False
@@ -96,7 +96,6 @@ VAL_SIZE = 500
 # VAL_SIZE = 50
 STEPS = 50
 
-
 for e in range(EPOCHS):
     train_loss = 0
     train_acc = 0
@@ -143,5 +142,4 @@ for i in range(10):
     plt.show()
     print("pred: " + LABELS_LIST[np.argmax(model.predict(x_v[i:i+1]))])
     print("acct: " + LABELS_LIST[np.argmax(y_v[i])])
-
 

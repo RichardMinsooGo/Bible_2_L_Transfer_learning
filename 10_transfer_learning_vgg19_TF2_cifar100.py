@@ -49,7 +49,7 @@ model.summary()
 cifar100 = tf.keras.datasets.cifar100
 
 # load dataset
-(x_train, y_train) , (x_val, y_val) = cifar100.load_data()
+(X_train, Y_train) , (X_test, Y_test) = cifar100.load_data()
 
 import numpy as np
 import cv2
@@ -60,8 +60,8 @@ NUM_CLASSES = 100
 
 # Onehot encode labels
 
-y_train = tf.keras.utils.to_categorical(y_train, NUM_CLASSES)
-y_val = tf.keras.utils.to_categorical(y_val, NUM_CLASSES)
+Y_train = tf.keras.utils.to_categorical(Y_train, NUM_CLASSES)
+Y_test = tf.keras.utils.to_categorical(Y_test, NUM_CLASSES)
 
 model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["categorical_accuracy"])
 
@@ -73,19 +73,19 @@ def getBatch(batch_size, train_or_val='train'):
     x_batch = []
     y_batch = []
     if train_or_val == 'train':
-        idx = np.random.randint(0, len(x_train), (batch_size))
+        idx = np.random.randint(0, len(X_train), (batch_size))
 
         for i in idx:
-            img = cv2.resize(x_train[i], (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_CUBIC)
+            img = cv2.resize(X_train[i], (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_CUBIC)
             x_batch.append(img)
-            y_batch.append(y_train[i])
+            y_batch.append(Y_train[i])
     elif train_or_val == 'val':
-        idx = np.random.randint(0, len(x_val), (batch_size))
+        idx = np.random.randint(0, len(X_test), (batch_size))
 
         for i in idx:
-            img = cv2.resize(x_val[i], (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_CUBIC)
+            img = cv2.resize(X_test[i], (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_CUBIC)
             x_batch.append(img)
-            y_batch.append(y_val[i]) 
+            y_batch.append(Y_test[i]) 
     else:
         print("error, please specify train or val")
 
@@ -93,13 +93,12 @@ def getBatch(batch_size, train_or_val='train'):
     y_batch = np.array(y_batch)
     return x_batch, y_batch
 
-EPOCHS = 3
-BATCH_SIZE = 50
+EPOCHS = 10
+BATCH_SIZE = 250
 VAL_SIZE = 500
-STEPS = 10
-# STEPS = int(50000/BATCH_SIZE)
-
-import sys
+# BATCH_SIZE = 50
+# VAL_SIZE = 50
+STEPS = 50
 
 for e in range(EPOCHS):
     train_loss = 0
@@ -107,22 +106,13 @@ for e in range(EPOCHS):
 
     for s in range(STEPS):
         x_batch, y_batch = getBatch(BATCH_SIZE, "train")
-
-        # print(x_batch.shape)
-        # sys.exit()
-        
         out = model.train_on_batch(x_batch, y_batch)
         train_loss += out[0]
         train_acc += out[1]
 
     print(f"Epoch: {e+1}\nTraining Loss = {train_loss / STEPS}\tTraining Acc = {train_acc / STEPS}")
 
-
     x_v, y_v = getBatch(VAL_SIZE, "val")
-    
-    # print(x_v.shape)
-    # sys.exit()
-
     eval = model.evaluate(x_v, y_v)
     print(f"Validation loss: {eval[0]}\tValidation Acc: {eval[1]}\n")
     
@@ -156,5 +146,4 @@ for i in range(10):
     plt.show()
     print("pred: " + LABELS_LIST[np.argmax(model.predict(x_v[i:i+1]))])
     print("acct: " + LABELS_LIST[np.argmax(y_v[i])])
-
 
