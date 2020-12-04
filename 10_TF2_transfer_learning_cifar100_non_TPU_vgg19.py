@@ -18,6 +18,7 @@ from tensorflow.keras.layers import Dense, Flatten, Dropout
 IMG_SIZE = 224                      # VGG19
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 num_classes = 100                   # cifar100
+
 # 사전 훈련된 모델 VGG19 에서 기본 모델을 생성합니다.
 base_model = tf.keras.applications.VGG19(input_shape=IMG_SHAPE,
                                                include_top=True,
@@ -47,8 +48,7 @@ model.add(Dropout(0.3))
 model.add(Dense(num_classes, activation='softmax'))
 model.summary()
 
-# import sys
-# sys.exit()
+
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['categorical_accuracy'])
 model_name = 'cifar100_VGG19'
 
@@ -58,12 +58,14 @@ cifar100 = tf.keras.datasets.cifar100
 # load dataset
 (X_train, Y_train) , (X_test, Y_test) = cifar100.load_data()
 
-NUM_CLASSES = 100
-
 # Onehot encode labels
+Y_train = tf.keras.utils.to_categorical(Y_train, num_classes)
+Y_test = tf.keras.utils.to_categorical(Y_test, num_classes)
 
-Y_train = tf.keras.utils.to_categorical(Y_train, NUM_CLASSES)
-Y_test = tf.keras.utils.to_categorical(Y_test, NUM_CLASSES)
+train_size = 250
+test_size = 500
+training_epoch = 3
+STEPS = int(50000/train_size)
 
 import os.path
 if os.path.isfile(model_name+'.h5'):
@@ -95,27 +97,20 @@ def getBatch(batch_size, train_or_val='train'):
     y_batch = np.array(y_batch)
     return x_batch, y_batch
 
-EPOCHS = 10
-BATCH_SIZE = 250
-VAL_SIZE = 500
-# BATCH_SIZE = 50
-# VAL_SIZE = 50
-STEPS = 50
-
-for e in range(EPOCHS):
+for e in range(training_epoch):
     train_loss = 0
     train_acc = 0
 
     for s in range(STEPS):
-        x_batch, y_batch = getBatch(BATCH_SIZE, "train")
+        x_batch, y_batch = getBatch(train_size, "train")
         out = model.train_on_batch(x_batch, y_batch)
         train_loss += out[0]
         train_acc += out[1]
 
     print(f"Epoch: {e+1}\nTraining Loss = {train_loss / STEPS}\tTraining Acc = {train_acc / STEPS}")
 
-    x_v, y_v = getBatch(VAL_SIZE, "val")
-    eval = model.evaluate(x_v, y_v)
+    x_batch_val, y_batch_val = getBatch(test_size, "val")
+    eval = model.evaluate(x_batch_val, y_batch_val)
     print(f"Validation loss: {eval[0]}\tValidation Acc: {eval[1]}\n")
     
 model.save_weights(model_name+'.h5', overwrite=True)
@@ -139,12 +134,12 @@ LABELS_LIST = [
     'worm'
 ]
 
-x_v, y_v = getBatch(10, "val")
+x_batch_val, y_batch_val = getBatch(10, "val")
 
 for i in range(10):
     import numpy as np
-    plt.imshow(x_v[i])
+    plt.imshow(x_batch_val[i])
     plt.show()
-    print("pred: " + LABELS_LIST[np.argmax(model.predict(x_v[i:i+1]))])
-    print("acct: " + LABELS_LIST[np.argmax(y_v[i])])
+    print("pred: " + LABELS_LIST[np.argmax(model.predict(x_batch_val[i:i+1]))])
+    print("acct: " + LABELS_LIST[np.argmax(y_batch_val[i])])
 

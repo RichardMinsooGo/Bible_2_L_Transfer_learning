@@ -1,7 +1,10 @@
 #Importing Libraries
 import numpy as np
 import cv2
+
+import matplotlib.pyplot as plt
 import time
+
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -9,6 +12,7 @@ import tensorflow as tf
 
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import GlobalAveragePooling2D,Dense,Input,Conv2D, Dropout, Flatten, BatchNormalization
+
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 #Define network
@@ -67,15 +71,15 @@ def shuffle_train_data(X_train, Y_train):
 
 train_size = 1600
 test_size = 1600
-training_epoch = 5
-
+training_epoch = 3
+STEPS = int(50000/train_size)
 time0 = time.time()
 
 import os.path
 if os.path.isfile(model_name+'.h5'):
     model.load_weights(model_name+'.h5')
 
-for idx in range(training_epoch*25):
+for idx in range(training_epoch*STEPS):
 
     X_shuffled, Y_shuffled = shuffle_train_data(X_train, Y_train)
     (X_train_new, Y_train_new) = X_shuffled[:train_size, ...], Y_shuffled[:train_size, ...] 
@@ -101,12 +105,12 @@ for idx in range(training_epoch*25):
 
     x_batch = np.array(x_batch)
     y_batch = np.array(y_batch)
-    y_batch = tf.keras.utils.to_categorical(y_batch, 100)
+    y_batch = tf.keras.utils.to_categorical(y_batch, num_classes)
 
     x_batch = x_batch/255.
     model.fit(x_batch, y_batch, batch_size = 100, epochs=5, verbose=1)
 
-    if (idx+1)%25 == 0:
+    if (idx+1)%STEPS == 0:
         x_batch_val = []
         y_batch_val = []
         for i in range(test_size):
@@ -116,7 +120,7 @@ for idx in range(training_epoch*25):
 
         x_batch_val = np.array(x_batch_val)
         y_batch_val = np.array(y_batch_val)
-        y_batch_val = tf.keras.utils.to_categorical(y_batch_val, 100)
+        y_batch_val = tf.keras.utils.to_categorical(y_batch_val, num_classes)
 
         x_batch_val = x_batch_val/255.
         # eval = model.evaluate(x_batch_val, y_batch_val, batch_size = 256)
@@ -128,4 +132,23 @@ for idx in range(training_epoch*25):
 
 time3 = time.time()
 print(training_epoch*5," epochs time :",time3-time0)
+
+# Sample outputs from validation set
+LABELS_LIST = [
+    'apple', 'aquarium_fish', 'baby', 'bear', 'beaver', 'bed', 'bee', 'beetle', 
+    'bicycle', 'bottle', 'bowl', 'boy', 'bridge', 'bus', 'butterfly', 'camel', 
+    'can', 'castle', 'caterpillar', 'cattle', 'chair', 'chimpanzee', 'clock', 
+    'cloud', 'cockroach', 'couch', 'crab', 'crocodile', 'cup', 'dinosaur', 
+    'dolphin', 'elephant', 'flatfish', 'forest', 'fox', 'girl', 'hamster', 
+    'house', 'kangaroo', 'keyboard', 'lamp', 'lawn_mower', 'leopard', 'lion',
+    'lizard', 'lobster', 'man', 'maple_tree', 'motorcycle', 'mountain', 'mouse',
+    'mushroom', 'oak_tree', 'orange', 'orchid', 'otter', 'palm_tree', 'pear',
+    'pickup_truck', 'pine_tree', 'plain', 'plate', 'poppy', 'porcupine',
+    'possum', 'rabbit', 'raccoon', 'ray', 'road', 'rocket', 'rose',
+    'sea', 'seal', 'shark', 'shrew', 'skunk', 'skyscraper', 'snail', 'snake',
+    'spider', 'squirrel', 'streetcar', 'sunflower', 'sweet_pepper', 'table',
+    'tank', 'telephone', 'television', 'tiger', 'tractor', 'train', 'trout',
+    'tulip', 'turtle', 'wardrobe', 'whale', 'willow_tree', 'wolf', 'woman',
+    'worm'
+]
 

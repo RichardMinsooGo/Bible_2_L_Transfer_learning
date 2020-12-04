@@ -64,15 +64,15 @@ def shuffle_train_data(X_train, Y_train):
 
 train_size = 1000
 test_size = 1000
-training_epoch = 1
-
+training_epoch = 3
+STEPS = int(50000/train_size)
 time0 = time.time()
 
 import os.path
 if os.path.isfile(model_name+'.h5'):
     model.load_weights(model_name+'.h5')
 
-for idx in range(training_epoch*25):
+for idx in range(training_epoch*STEPS):
 
     X_shuffled, Y_shuffled = shuffle_train_data(X_train, Y_train)
     (X_train_new, Y_train_new) = X_shuffled[:train_size, ...], Y_shuffled[:train_size, ...] 
@@ -98,12 +98,12 @@ for idx in range(training_epoch*25):
 
     x_batch = np.array(x_batch)
     y_batch = np.array(y_batch)
-    y_batch = tf.keras.utils.to_categorical(y_batch, 100)
+    y_batch = tf.keras.utils.to_categorical(y_batch, num_classes)
 
     x_batch = x_batch/255.
     model.fit(x_batch, y_batch, batch_size = 100, epochs=5, verbose=1)
 
-    if (idx+1)%25 == 0:
+    if (idx+1)%STEPS == 0:
         x_batch_val = []
         y_batch_val = []
         for i in range(test_size):
@@ -113,7 +113,7 @@ for idx in range(training_epoch*25):
 
         x_batch_val = np.array(x_batch_val)
         y_batch_val = np.array(y_batch_val)
-        y_batch_val = tf.keras.utils.to_categorical(y_batch_val, 100)
+        y_batch_val = tf.keras.utils.to_categorical(y_batch_val, num_classes)
 
         x_batch_val = x_batch_val/255.
         # eval = model.evaluate(x_batch_val, y_batch_val, batch_size = 256)
