@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 
 import matplotlib.pyplot as plt
+import time
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -13,18 +14,18 @@ from tensorflow.keras import layers, Input, Model
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, Dense, MaxPooling2D, Dropout, Flatten,GlobalAveragePooling2D
 
+#Define network
 IMG_SIZE = 224                      # VGG19
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
+num_classes = 10                    # cifar10
 
-# 사전 훈련된 모델 ResNet152V2 에서 기본 모델을 생성합니다.
+# 사전 훈련된 모델 VGG19 에서 기본 모델을 생성합니다.
 base_model = tf.keras.applications.ResNet152V2(input_shape=IMG_SHAPE,
                                                include_top=False,
                                                weights='imagenet')
 
-model_name = 'cifar10_ResNet152V2'
 base_model.summary()
 
-    
 # The last 15 layers fine tune
 for layer in base_model.layers[:-15]:
     layer.trainable = False
@@ -36,14 +37,14 @@ x = Dense(units=512, activation='relu')(x)
 x = Dropout(0.3)(x)
 x = Dense(units=512, activation='relu')(x)
 x = Dropout(0.3)(x)
-output  = Dense(units=10, activation='softmax')(x)
+output  = Dense(units=num_classes, activation='softmax')(x)
 model = Model(base_model.input, output)
 
 
 model.summary()
 
-# import sys
-# sys.exit()
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['categorical_accuracy'])
+model_name = 'cifar10_ResNet152V2'
 
 # Load the CIFAR-10 dataset
 cifar10 = tf.keras.datasets.cifar10
@@ -51,14 +52,9 @@ cifar10 = tf.keras.datasets.cifar10
 # load dataset
 (X_train, Y_train) , (X_test, Y_test) = cifar10.load_data()
 
-NUM_CLASSES = 10
-
 # Onehot encode labels
-
-Y_train = tf.keras.utils.to_categorical(Y_train, NUM_CLASSES)
-Y_test = tf.keras.utils.to_categorical(Y_test, NUM_CLASSES)
-
-model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["categorical_accuracy"])
+Y_train = tf.keras.utils.to_categorical(Y_train, num_classes)
+Y_test = tf.keras.utils.to_categorical(Y_test, num_classes)
 
 import os.path
 if os.path.isfile(model_name+'.h5'):
@@ -117,8 +113,6 @@ model.save_weights(model_name+'.h5', overwrite=True)
 
 # Sample outputs from validation set
 LABELS_LIST = "airplane automobile bird cat deer dog frog horse ship truck".split(" ")
-
-import matplotlib.pyplot as plt
 
 x_v, y_v = getBatch(10, "val")
 

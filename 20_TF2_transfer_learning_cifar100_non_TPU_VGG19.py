@@ -1,7 +1,10 @@
 #Importing Libraries
 import numpy as np
 import cv2
+
+import matplotlib.pyplot as plt
 import time
+
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -15,6 +18,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 #Define network
 IMG_SIZE = 224                      # VGG19
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
+num_classes = 100                   # cifar100
 
 def net():
     base_model = tf.keras.applications.VGG19(input_shape=IMG_SHAPE,
@@ -40,7 +44,7 @@ def net():
     model.add(Dropout(0.3))
     model.add(Dense(units=1024, activation='relu'))
     model.add(Dropout(0.3))
-    model.add(Dense(100, activation='softmax'))
+    model.add(Dense(num_classes, activation='softmax'))
 
     model.summary()    
     return model
@@ -127,4 +131,23 @@ for idx in range(training_epoch*25):
 
 time3 = time.time()
 print(training_epoch*5," epochs time :",time3-time0)
+
+# Sample outputs from validation set
+LABELS_LIST = [
+    'apple', 'aquarium_fish', 'baby', 'bear', 'beaver', 'bed', 'bee', 'beetle', 
+    'bicycle', 'bottle', 'bowl', 'boy', 'bridge', 'bus', 'butterfly', 'camel', 
+    'can', 'castle', 'caterpillar', 'cattle', 'chair', 'chimpanzee', 'clock', 
+    'cloud', 'cockroach', 'couch', 'crab', 'crocodile', 'cup', 'dinosaur', 
+    'dolphin', 'elephant', 'flatfish', 'forest', 'fox', 'girl', 'hamster', 
+    'house', 'kangaroo', 'keyboard', 'lamp', 'lawn_mower', 'leopard', 'lion',
+    'lizard', 'lobster', 'man', 'maple_tree', 'motorcycle', 'mountain', 'mouse',
+    'mushroom', 'oak_tree', 'orange', 'orchid', 'otter', 'palm_tree', 'pear',
+    'pickup_truck', 'pine_tree', 'plain', 'plate', 'poppy', 'porcupine',
+    'possum', 'rabbit', 'raccoon', 'ray', 'road', 'rocket', 'rose',
+    'sea', 'seal', 'shark', 'shrew', 'skunk', 'skyscraper', 'snail', 'snake',
+    'spider', 'squirrel', 'streetcar', 'sunflower', 'sweet_pepper', 'table',
+    'tank', 'telephone', 'television', 'tiger', 'tractor', 'train', 'trout',
+    'tulip', 'turtle', 'wardrobe', 'whale', 'willow_tree', 'wolf', 'woman',
+    'worm'
+]
 
