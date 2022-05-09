@@ -61,15 +61,7 @@ for idx in np.arange(9):
     imshow(images[idx])
     ax.set_title(classes[labels[idx]])
     
-"""    
-# net = DPN92()
-# net = ShuffleNetG2()
-# net = SENet18()
-# net = ShuffleNetV2(1)
-# net = EfficientNetB0()
-# net = RegNetX_200MF()
 
-"""
 
 class BasicBlock(nn.Module):
     def __init__(self, in_planes, planes, stride=1):

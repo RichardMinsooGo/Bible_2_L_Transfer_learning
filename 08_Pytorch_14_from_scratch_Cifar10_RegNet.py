@@ -60,14 +60,6 @@ for idx in np.arange(9):
     ax = fig.add_subplot(3, 9/3, idx+1, xticks=[], yticks=[])
     imshow(images[idx])
     ax.set_title(classes[labels[idx]])
-    
-"""    
-
-# net = ShuffleNetV2(1)
-# net = EfficientNetB0()
-# net = RegNetX_200MF()
-
-"""
 
 class SE(nn.Module):
     '''Squeeze-and-Excitation block.'''

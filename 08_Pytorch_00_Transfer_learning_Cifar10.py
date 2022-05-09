@@ -83,7 +83,8 @@ transfer_model = models.resnet101(pretrained=True, progress=True)
 transfer_model = models.resnet152(pretrained=False, progress=True)
 
 """
-transfer_model =models.xception(pretrained=True, progress=True)
+
+transfer_model =models.resnet152(pretrained=True, progress=True)
 model=transfer_model.to(device)
 
 

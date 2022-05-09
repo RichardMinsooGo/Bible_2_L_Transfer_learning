@@ -61,13 +61,7 @@ for idx in np.arange(9):
     imshow(images[idx])
     ax.set_title(classes[labels[idx]])
     
-"""    
 
-# net = ShuffleNetV2(1)
-# net = EfficientNetB0()
-# net = RegNetX_200MF()
-
-"""
 
 def swish(x):
     return x * x.sigmoid()

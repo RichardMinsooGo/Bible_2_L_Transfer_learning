@@ -60,16 +60,7 @@ for idx in np.arange(9):
     ax = fig.add_subplot(3, 9/3, idx+1, xticks=[], yticks=[])
     imshow(images[idx])
     ax.set_title(classes[labels[idx]])
-    
-"""    
-# net = DPN92()
-# net = ShuffleNetG2()
-# net = SENet18()
-# net = ShuffleNetV2(1)
-# net = EfficientNetB0()
-# net = RegNetX_200MF()
 
-"""
 
 class ShuffleBlock(nn.Module):
     def __init__(self, groups):

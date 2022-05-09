@@ -61,23 +61,6 @@ for idx in np.arange(9):
     imshow(images[idx])
     ax.set_title(classes[labels[idx]])
     
-"""    
-# net = VGG('VGG19')
-# net = GoogLeNet()
-# net = MobileNet()
-# net = MobileNetV2()
-# net = ResNet18()
-# net = PreActResNet18()
-# net = DenseNet121()
-# net = ResNeXt29_2x64d()
-# net = DPN92()
-# net = ShuffleNetG2()
-# net = SENet18()
-# net = ShuffleNetV2(1)
-# net = EfficientNetB0()
-# net = RegNetX_200MF()
-
-"""
 
 class Inception(nn.Module):
     def __init__(self, in_planes, n1x1, n3x3red, n3x3, n5x5red, n5x5, pool_planes):
@@ -152,7 +135,7 @@ class GoogLeNet(nn.Module):
         self.b5 = Inception(832, 384, 192, 384, 48, 128, 128)
 
         self.avgpool = nn.AvgPool2d(8, stride=1)
-        self.linear = nn.Linear(1024, 10)
+        self.linear = nn.Linear(1024, num_classes)
 
     def forward(self, x):
         out = self.pre_layers(x)
