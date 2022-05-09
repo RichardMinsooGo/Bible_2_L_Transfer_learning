@@ -1,36 +1,32 @@
-KR>
+# Korean
 
- 이 저장소는 전이 학습 샘플들을 업데이트 하였다. 
- 
- Notebook 파일들은 아래의 저장소들들 업데이트 후에 할 예정이다.
+* Transfer Learning Theory 1 : https://wikidocs.net/164331
+* Transfer Learning Theory 2 : https://wikidocs.net/164487
+* Implementation - Pytorchn : https://wikidocs.net/165005
+* Implementation - TensorFlow 2.0 : https://wikidocs.net/165006
 
- 아래의 Github 저장소는 TF1.0과 Keras로 알고리즘 용으로 만들어진 code들입니다. 
- 
- 대부분 TF2.0으로 재구성 예정입니다. 
- 
- 
-EN>
+* Image Classification Explained : https://wikidocs.net/164335
+* Understanding of Alexnet : https://wikidocs.net/164787
+* Understanding of VGG-16, VGG-19 : https://wikidocs.net/164796
+* nderstanding of Inception : https://wikidocs.net/164794
+* Understanding of MobileNet : https://wikidocs.net/164799
+* Understanding of ResNet : https://wikidocs.net/164800
+* Understanding of XCeption : https://wikidocs.net/164801
+* Understanding of Vision Transformer : https://wikidocs.net/164842
 
- This repository will be used as "transfer learning"
- 
- Notebppk file will be updated later after the update of below repositories.
- 
- Belows were built with TF 1.X and Keras.
- Below repositories will be updated with Tensorflow 2.X as expert mode. 
+ # English
 
-https://github.com/RichardMinsooGo-ML
- : This is new repository for Machine Learning.
+* Transfer Learning Theory 1 : https://wikidocs.net/165499
+* Transfer Learning Theory 2 : https://wikidocs.net/165500
+* Implementation - Pytorchn : https://wikidocs.net/166086
+* Implementation - TensorFlow 2.0 : https://wikidocs.net/166124
 
+* Image Classification Explained : https://wikidocs.net/165425
+* Understanding of Alexnet : https://wikidocs.net/165426
+* Understanding of VGG-16, VGG-19 : https://wikidocs.net/165427
+* nderstanding of Inception : https://wikidocs.net/165428
+* Understanding of MobileNet : https://wikidocs.net/165429
+* Understanding of ResNet : https://wikidocs.net/165430
+* Understanding of XCeption : https://wikidocs.net/165431
+* Understanding of Vision Transformer : https://wikidocs.net/165432
 
-https://github.com/RichardMinsooGo-RL-Gym
- : This is new repository for Reinforcement Learning based on Open-AI gym.
-
-
-https://github.com/RichardMinsooGo-RL-Single-agent  
- : This is new repository for Reinforcement Learning for Single Agent.
-
-
-https://github.com/RichardMinsooGo-RL-Multi-agent
- : This new repository is for Reinforcement Learning for Multi Agents.
-
- 
