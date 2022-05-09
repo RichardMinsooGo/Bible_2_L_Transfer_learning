@@ -39,12 +39,14 @@ for i in range(9):
 # show the figure
 plt.show()
 
+# returns batch_size random samples from either training set or validation set
+# resizes each image to (224, 244, 3), the native input size for VGG19
 #Define network
 IMG_SIZE = 224                      # VGG19
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 num_classes = 10                    # cifar10
 
-# 사전 훈련된 모델 VGG19 에서 기본 모델을 생성합니다.
+# 사전 훈련된 모델 ResNet152V2 에서 기본 모델을 생성합니다.
 base_model = tf.keras.applications.ResNet152V2(input_shape=IMG_SHAPE,
                                                include_top=False,
                                                weights='imagenet')
@@ -102,22 +104,24 @@ def getBatch(batch_size, train_or_val='train'):
 from tqdm import tqdm, tqdm_notebook, trange
 
 for epoch in range(EPOCHS):
-
+    
     with tqdm_notebook(total=STEPS, desc=f"Train Epoch {epoch+1}") as pbar:    
         train_losses = []
         train_accuracies = []
+        
         for s in range(STEPS):
+            
             x_batch, y_batch = getBatch(train_size, "train")
+            
             out= model.train_on_batch(x_batch, y_batch)
-            loss_val = out[0]*100
+            loss_val = out[0]
             acc      = out[1]*100
-
             train_losses.append(loss_val)
             train_accuracies.append(acc)
             
             pbar.update(1)
             pbar.set_postfix_str(f"Loss: {loss_val:.4f} ({np.mean(train_losses):.4f}) Acc: {acc:.3f} ({np.mean(train_accuracies):.3f})")
-            
+
     with tqdm_notebook(total=VAL_STEPS, desc=f"Test_ Epoch {epoch+1}") as pbar:    
         test_losses = []
         test_accuracies = []
@@ -130,10 +134,10 @@ for epoch in range(EPOCHS):
             
             test_losses.append(loss_val)
             test_accuracies.append(acc)
+
             pbar.update(1)
             pbar.set_postfix_str(f"Loss: {loss_val:.4f} ({np.mean(test_losses):.4f}) Acc: {acc:.3f} ({np.mean(test_accuracies):.3f})")
-
-    
+            
 model.save_weights(model_name+'.h5', overwrite=True)
 
 # Sample outputs from validation set

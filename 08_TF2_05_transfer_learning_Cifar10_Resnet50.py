@@ -100,22 +100,24 @@ def getBatch(batch_size, train_or_val='train'):
 from tqdm import tqdm, tqdm_notebook, trange
 
 for epoch in range(EPOCHS):
-
+    
     with tqdm_notebook(total=STEPS, desc=f"Train Epoch {epoch+1}") as pbar:    
         train_losses = []
         train_accuracies = []
+        
         for s in range(STEPS):
+            
             x_batch, y_batch = getBatch(train_size, "train")
+            
             out= model.train_on_batch(x_batch, y_batch)
-            loss_val = out[0]*100
+            loss_val = out[0]
             acc      = out[1]*100
-
             train_losses.append(loss_val)
             train_accuracies.append(acc)
             
             pbar.update(1)
             pbar.set_postfix_str(f"Loss: {loss_val:.4f} ({np.mean(train_losses):.4f}) Acc: {acc:.3f} ({np.mean(train_accuracies):.3f})")
-            
+
     with tqdm_notebook(total=VAL_STEPS, desc=f"Test_ Epoch {epoch+1}") as pbar:    
         test_losses = []
         test_accuracies = []
@@ -128,10 +130,10 @@ for epoch in range(EPOCHS):
             
             test_losses.append(loss_val)
             test_accuracies.append(acc)
+
             pbar.update(1)
             pbar.set_postfix_str(f"Loss: {loss_val:.4f} ({np.mean(test_losses):.4f}) Acc: {acc:.3f} ({np.mean(test_accuracies):.3f})")
-
-    
+            
 model.save_weights(model_name+'.h5', overwrite=True)
 
 # Sample outputs from validation set

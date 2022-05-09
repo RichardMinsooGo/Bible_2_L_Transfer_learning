@@ -2,8 +2,7 @@
 import cv2
 
 import tensorflow as tf
-# from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D, Dropout
-from tensorflow.keras import layers
+from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D, Dropout
 from tensorflow.keras import Model, Sequential
 from tensorflow.keras import Input  
 import matplotlib.pyplot as plt
@@ -23,8 +22,8 @@ X_train, X_test = X_train / 255.0, X_test / 255.0
 Y_train = tf.keras.utils.to_categorical(Y_train, num_classes)
 Y_test  = tf.keras.utils.to_categorical(Y_test, num_classes)
 
-train_size = 25
-test_size  = 50
+train_size = 250
+test_size  = 500
 STEPS = int(len(X_train)/train_size)
 VAL_STEPS = int(len(X_test)/test_size)
 
@@ -40,39 +39,34 @@ for i in range(9):
 # show the figure
 plt.show()
 
-# returns batch_size random samples from either training set or validation set
-# resizes each image to (224, 244, 3), the native input size for VGG19
-#Define network
-IMG_SIZE = 224                      # VGG19
+IMG_SIZE = 299                      # InceptionV3 optional size. Default size is 299.
+# IMG_SIZE = 150                      # InceptionV3 optional size. Default size is 299.
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 num_classes = 10                    # cifar10
 
-class LeNet(tf.keras.Model):
-    def __init__(self, num_classes):
-        super(LeNet, self).__init__()
-        self.conv1 = layers.Conv2D(6, kernel_size=5, activation='sigmoid')
-        self.conv2 = layers.Conv2D(16, kernel_size=5, activation='sigmoid')
-        self.max_pool2d = layers.MaxPool2D(pool_size=2)
-        self.flatten = layers.Flatten()
-        self.fc1 = layers.Dense(120, activation='sigmoid')
-        self.fc2 = layers.Dense(84, activation='sigmoid')
-        self.fc3 = layers.Dense(num_classes, activation='softmax')
-        
-    def call(self, x):
-        out = self.conv1(x)
-        out = self.max_pool2d(out)
-        out = self.conv2(out)
-        out = self.max_pool2d(out)
-        out = self.flatten(out)
-        out = self.fc1(out)
-        out = self.fc2(out)
-        out = self.fc3(out)
-        return out
+# 사전 훈련된 모델 VGG19 에서 기본 모델을 생성합니다.
+base_model = tf.keras.applications.InceptionV3(input_shape=IMG_SHAPE,
+                                               include_top=False,
+                                               weights='imagenet')
 
+base_model.summary()
 
-model = LeNet(num_classes)
+base_model.trainable = False
+
+# freeze all weights
+# for layer in model.layers:
+#     layer.trainable = False
+
+x = tf.keras.layers.Flatten()(base_model.output)
+x = tf.keras.layers.Dense(1024, activation = 'relu')(x)
+x = tf.keras.layers.Dropout(0.3)(x)
+x = tf.keras.layers.Dense(num_classes, activation='softmax')(x)
+
+model = Model(base_model.input, x)
+model.summary()
+
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['categorical_accuracy'])
-model_name = 'cifar10_AlexNet'
+model_name = 'cifar10_InceptionV3'
 
 import os.path
 if os.path.isfile(model_name+'.h5'):
