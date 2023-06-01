@@ -1,31 +1,42 @@
-#Importing Libraries
-import cv2
+'''
+Data Engineering
+'''
 
+'''
+D1. Import Libraries for Data Engineering
+'''
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D, Dropout
-from tensorflow.keras import Model, Sequential
-from tensorflow.keras import Input  
-import matplotlib.pyplot as plt
-import numpy as np
 
-# Load the CIFAR-10 dataset
-num_classes = 10
-EPOCHS = 3
+'''
+D2. Load Cifar10 data / Only for Toy Project
+'''
 
+# print(tf.__version__)
 cifar10 = tf.keras.datasets.cifar10
 
 # load dataset
 (X_train, Y_train), (X_test, Y_test) = cifar10.load_data()
+
+# Change data type as float. If it is int type, it might cause error
+'''
+D3. Data Preprocessing
+'''
+# Normalizing
 X_train, X_test = X_train / 255.0, X_test / 255.0
 
-# Onehot encode labels
-Y_train = tf.keras.utils.to_categorical(Y_train, num_classes)
-Y_test  = tf.keras.utils.to_categorical(Y_test, num_classes)
+print(Y_train[0:10])
+print(X_train.shape)
 
-train_size = 250
-test_size  = 500
-STEPS = int(len(X_train)/train_size)
-VAL_STEPS = int(len(X_test)/test_size)
+# One-Hot Encoding
+from tensorflow.keras.utils import to_categorical
+
+Y_train = to_categorical(Y_train, 10)
+Y_test = to_categorical(Y_test, 10)
+
+'''
+D4. EDA(? / Exploratory data analysis)
+'''
+import matplotlib.pyplot as plt
 
 # plot first few images
 for i in range(9):
@@ -39,13 +50,36 @@ for i in range(9):
 # show the figure
 plt.show()
 
+'''
+Model Engineering
+'''
+
+'''
+M1. Import Libraries for Model Engineering
+'''
+
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Flatten, Conv2D, MaxPool2D, Dropout
+from tensorflow.keras import optimizers
+from tensorflow.keras import Input
+import numpy as np
+
+'''
+M2. Set Hyperparameters
+'''
+
 # returns batch_size random samples from either training set or validation set
 # resizes each image to (224, 244, 3), the native input size for VGG19
-#Define network
 IMG_SIZE = 224                      # VGG19
-IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
-num_classes = 10                    # cifar10
+hidden_size = 256
+output_dim = 10      # output layer dimensionality = num_classes
+EPOCHS = 5
+learning_rate = 0.001
 
+'''
+M3. Build NN model
+'''
 # 3-Layers Convolution neural network with one hidden layer
 class CNN_Model(Model):
     def __init__(self):
@@ -71,7 +105,7 @@ class CNN_Model(Model):
         self.flatten = Flatten()
         self.d1 = Dense(256, activation='relu')
         self.d2 = Dropout(0.2)
-        self.d3 = Dense(10, activation='softmax')
+        self.d3 = Dense(output_dim, activation='softmax')
 
     def call(self, x):
         # Convolution 1
@@ -97,13 +131,39 @@ class CNN_Model(Model):
         return out
 
 model = CNN_Model()
+temp_inputs = Input(shape=(IMG_SIZE, IMG_SIZE, 3))
+model(temp_inputs)
+model.summary()
 
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['categorical_accuracy'])
+'''
+M4. Optimizer
+'''
+# Optimizer can be included at model.compile
+
+'''
+M5. Model Compilation - model.compile
+'''
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 model_name = 'cifar10_CNN'
+
+'''
+M6. Load trained model
+'''
 
 import os.path
 if os.path.isfile(model_name+'.h5'):
     model.load_weights(model_name+'.h5')
+
+'''
+M7. Define getBatch Function for "model.train_on_batch"
+'''
+train_size = 250
+test_size  = 500
+STEPS = int(len(X_train)/train_size)
+VAL_STEPS = int(len(X_test)/test_size)
+
+import cv2
 
 def getBatch(batch_size, train_or_val='train'):
     x_batch = []
@@ -129,44 +189,58 @@ def getBatch(batch_size, train_or_val='train'):
     y_batch = np.array(y_batch)
     return x_batch, y_batch
 
+'''
+M8. Define Episode / each step process
+'''
+
 from tqdm import tqdm, tqdm_notebook, trange
 
 for epoch in range(EPOCHS):
-
+    
     with tqdm_notebook(total=STEPS, desc=f"Train Epoch {epoch+1}") as pbar:    
         train_losses = []
         train_accuracies = []
+        
         for s in range(STEPS):
+            
             x_batch, y_batch = getBatch(train_size, "train")
+            
             out= model.train_on_batch(x_batch, y_batch)
-            loss_val = out[0]*100
+            loss_val = out[0]
             acc      = out[1]*100
-
             train_losses.append(loss_val)
             train_accuracies.append(acc)
             
             pbar.update(1)
             pbar.set_postfix_str(f"Loss: {loss_val:.4f} ({np.mean(train_losses):.4f}) Acc: {acc:.3f} ({np.mean(train_accuracies):.3f})")
             
-    with tqdm_notebook(total=VAL_STEPS, desc=f"Test_ Epoch {epoch+1}") as pbar:    
-        test_losses = []
-        test_accuracies = []
-        for s in range(VAL_STEPS):
-            x_batch_val, y_batch_val = getBatch(test_size, "val")
-            evaluation = model.evaluate(x_batch_val, y_batch_val)
-            
-            loss_val= evaluation[0]
-            acc     = evaluation[1]*100
-            
-            test_losses.append(loss_val)
-            test_accuracies.append(acc)
-            pbar.update(1)
-            pbar.set_postfix_str(f"Loss: {loss_val:.4f} ({np.mean(test_losses):.4f}) Acc: {acc:.3f} ({np.mean(test_accuracies):.3f})")
+'''
+M9. Model evaluation
+'''
+with tqdm_notebook(total=VAL_STEPS, desc=f"Test_ Epoch {epoch+1}") as pbar:    
+    test_losses = []
+    test_accuracies = []
+    for s in range(VAL_STEPS):
+        x_batch_val, y_batch_val = getBatch(test_size, "val")
+        evaluation = model.evaluate(x_batch_val, y_batch_val)
 
-    
+        loss_val= evaluation[0]
+        acc     = evaluation[1]*100
+
+        test_losses.append(loss_val)
+        test_accuracies.append(acc)
+
+        pbar.update(1)
+        pbar.set_postfix_str(f"Loss: {loss_val:.4f} ({np.mean(test_losses):.4f}) Acc: {acc:.3f} ({np.mean(test_accuracies):.3f})")
+        
+'''
+M10. Save Model
+'''
 model.save_weights(model_name+'.h5', overwrite=True)
 
-# Sample outputs from validation set
+'''
+M11. Sample outputs from validation set
+'''
 LABELS_LIST = "airplane automobile bird cat deer dog frog horse ship truck".split(" ")
 
 n_sample = 8
