@@ -1,36 +1,60 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torchvision
-import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
+'''
+Data Engineering
+'''
+
+'''
+D1. Import Libraries for Data Engineering
+'''
 import numpy as np
 
-# Device configuration
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+import torch
+import torchvision
+from torchvision import datasets
+import torchvision.transforms as transforms
 
-# Hyper-parameters 
+'''
+D2. Load CIFAR10 data
+'''
+train_dataset = datasets.CIFAR10(root='./data', 
+                             download=True,
+                             train=True,
+                             transform=transforms.ToTensor())
+
+test_dataset = datasets.CIFAR10(root='./data', 
+                            download=True,
+                            train=False,
+                             transform=transforms.ToTensor())
+
+'''
+Model Engineering
+'''
+
+'''
+M1. Import Libraries for Model Engineering
+'''
+
+import torch.nn as nn
+import torch.optim as optimizers
+
+np.random.seed(123)
+torch.manual_seed(123)
+
+'''
+M2. Set Hyperparameters
+'''
 hidden_size = 256 
-num_classes = 10
-EPOCHS = 3
+output_dim = 10 # output layer dimensionality = num_classes
+EPOCHS = 5
 batch_size = 100
 learning_rate = 0.001
 
-# CIFAR10 dataset 
-train_dataset = torchvision.datasets.CIFAR10(root='./data', 
-                                           train=True, 
-                                           transform=transforms.ToTensor(),  
-                                           download=True)
+'''
+M3. DataLoader
+'''
 
-test_dataset = torchvision.datasets.CIFAR10(root='./data', 
-                                          train=False, 
-                                          transform=transforms.ToTensor())
-
-# Data loader
 train_ds = torch.utils.data.DataLoader(dataset=train_dataset,
                                        batch_size=batch_size, 
                                        shuffle=True)
-
 test_ds = torch.utils.data.DataLoader(dataset=test_dataset,
                                       batch_size=batch_size, 
                                       shuffle=False)
@@ -39,28 +63,10 @@ test_ds = torch.utils.data.DataLoader(dataset=test_dataset,
 classes = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog",
           "horse", "ship", "truck"]
 
-# Helper function to display the image
-def imshow(img):
-    # Un-normalize and display the image
-    img = img / 2 + 0.5
-    # Convert from tensor image
-    plt.imshow(np.transpose(img, (1,2,0)))
-
-# Get one batch of training images
-dataiter = iter(test_ds)
-images, labels = dataiter.next()
-# Convert images to numpy for display
-images = images.numpy()
-
-# Plot the images in the batch
-fig = plt.figure(figsize=(6, 6))
-
-# Display 20 images
-for idx in np.arange(9):
-    ax = fig.add_subplot(3, 9/3, idx+1, xticks=[], yticks=[])
-    imshow(images[idx])
-    ax.set_title(classes[labels[idx]])
-    
+'''
+M4. Build NN model
+'''
+import torch.nn.functional as F
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -122,7 +128,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, output_dim=10):
         super(ResNet, self).__init__()
         self.in_planes = 64
 
@@ -133,7 +139,7 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
-        self.linear = nn.Linear(512*block.expansion, num_classes)
+        self.linear = nn.Linear(512*block.expansion, output_dim)
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
@@ -173,25 +179,39 @@ def ResNet101():
 def ResNet152():
     return ResNet(Bottleneck, [3, 8, 36, 3])
 
+'''
+M5. Transfer model to GPU
+'''
+
+# Device configuration
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 net = ResNet18()
 model=net.to(device)
 
-# Loss and optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  
+'''
+M6. Optimizer
+'''
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-# Train the model
-n_total_steps = len(train_ds)
+'''
+M7. Define Loss Function
+'''
+
+criterion = nn.CrossEntropyLoss()
+'''
+M8. Define train loop
+'''
 
 def train_step(model, images, labels):
     model.train()
-    # origin shape: [100, 1, 28, 28]
+    
     images = images.to(device)
     labels = labels.to(device)
 
     # Forward pass
-    outputs = model(images)
-    loss = criterion(outputs, labels)
+    predictions = model(images)
+    loss = criterion(predictions, labels)
     loss_val = loss.item()
 
     # Backward and optimize
@@ -201,33 +221,40 @@ def train_step(model, images, labels):
 
     # Pytorch need a manual coding for accuracy
     # max returns (value ,index)
-    _, predicted = torch.max(outputs.data, 1)           
+    _, predicted = torch.max(predictions.data, 1)
     n_samples = labels.size(0)
     n_correct = (predicted == labels).sum().item()
     acc = 100.0 * n_correct / n_samples
     
     return loss_val, acc
 
+'''
+M9. Define validation / test loop
+'''
+
 def test_step(model, images, labels):
     model.eval()
-    # origin shape: [100, 1, 28, 28]
+    
     images = images.to(device)
     labels = labels.to(device)
 
     # Forward pass
-    outputs = model(images)
-    loss = criterion(outputs, labels)
+    predictions = model(images)
+    loss = criterion(predictions, labels)
     loss_val = loss.item()
 
     # Pytorch need a manual coding for accuracy
     # max returns (value ,index)
-    _, predicted = torch.max(outputs.data, 1)           
+    _, predicted = torch.max(predictions.data, 1)
     n_samples = labels.size(0)
     n_correct = (predicted == labels).sum().item()
     acc = 100.0 * n_correct / n_samples
     
     return loss_val, acc
 
+'''
+M10. Define Episode / each step process
+'''
 from tqdm import tqdm, tqdm_notebook, trange
 
 for epoch in range(EPOCHS):
@@ -247,20 +274,22 @@ for epoch in range(EPOCHS):
             pbar.set_postfix_str(f"Loss: {loss_val:.4f} ({np.mean(train_losses):.4f}) Acc: {acc:.3f} ({np.mean(train_accuracies):.3f})")
 
 
-    # Test the model
-    # In test phase, we don't need to compute gradients (for memory efficiency)
-    with torch.no_grad():
-        
-        with tqdm_notebook(total=len(test_ds), desc=f"Test_ Epoch {epoch+1}") as pbar:    
-            test_losses = []
-            test_accuracies = []
+'''
+M11. Model evaluation
+'''
+# In test phase, we don't need to compute gradients (for memory efficiency)
+with torch.no_grad():
 
-            for images, labels in test_ds:
-                loss_val, acc = test_step(model, images, labels)
+    with tqdm_notebook(total=len(test_ds), desc=f"Test_ Epoch {epoch+1}") as pbar:    
+        test_losses = []
+        test_accuracies = []
 
-                test_losses.append(loss_val)
-                test_accuracies.append(acc)
+        for images, labels in test_ds:
+            loss_val, acc = test_step(model, images, labels)
 
-                pbar.update(1)
-                pbar.set_postfix_str(f"Loss: {loss_val:.4f} ({np.mean(test_losses):.4f}) Acc: {acc:.3f} ({np.mean(test_accuracies):.3f})")
+            test_losses.append(loss_val)
+            test_accuracies.append(acc)
+
+            pbar.update(1)
+            pbar.set_postfix_str(f"Loss: {loss_val:.4f} ({np.mean(test_losses):.4f}) Acc: {acc:.3f} ({np.mean(test_accuracies):.3f})")
             
